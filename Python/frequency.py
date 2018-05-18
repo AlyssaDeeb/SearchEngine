@@ -25,7 +25,7 @@ termDict = defaultdict(int)
 freqDict = defaultdict(int)
 termFileDict = defaultdict(int)
 termFileCountDict = defaultdict(int)
-totalFiles = 0
+
 
 def open_bookkeeping(base_dir):
     # open book keeping file
@@ -41,7 +41,7 @@ def is_visable(element):
 # tokenization & term-frequency calculation
 
 
-def get_visable_text(soup, fileName):
+def get_visable_text(soup, fileName, totalTerms):
     '''
     Give a beautiful soup object, tokenizes selected text, inserts
     into a dictionary keeping track of the frequency of each term.
@@ -65,14 +65,19 @@ def get_visable_text(soup, fileName):
                     if termDict.has_key(clean_token):
                         freqDict[clean_token] += 1
                     else:
-                        termDict[clean_token] = 1
+                        termDict[clean_token] = totalTerms
                         freqDict[clean_token] = 1
-                    if posDict.has_key((fileName,clean_token)):
-                        posDict[(fileName,clean_token)].append(position)
+                        totalTerms += 1
+
+
+                    if posDict.has_key((fileName, clean_token)):
+                        posDict[(fileName, clean_token)].append(position)
+
                     else:
                         posDict[(fileName,clean_token)] = [position]
+
                     position += 1
-                    termFileDict[(fileName,clean_token)] +=1
+                    termFileDict[(fileName,clean_token)] += 1
 
                 # if token is non empty AND
                 # token is a number AND
@@ -82,6 +87,7 @@ def get_visable_text(soup, fileName):
                         f.write(clean_token + ", ")
 
     termFileCountDict[fileName] = position
+    return totalTerms
 
 
 
@@ -89,7 +95,7 @@ def get_visable_text(soup, fileName):
 # and outputs to file
 
 
-def parse_files(base_dir, dict, output_dir, totalFiles):
+def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
     '''
     For each file in WEBPAGES_RAW we pass into beautiful soup and
     receive the term-frequency dictionary for each document via
@@ -101,14 +107,17 @@ def parse_files(base_dir, dict, output_dir, totalFiles):
     :return: None
     '''
 
+    testTotal = 0;
 
     for file_dir in dict:
+        if(testTotal > 10):
+            break;
+        print "Processing file: ", base_dir + file_dir, " Count: ", totalFiles
+
         fileDict[file_dir] = totalFiles
         fileNameDict[file_dir] = dict[file_dir]
         fileRefCountDict[dict[file_dir]] = 0
         totalFiles += 1
-
-        print "Processing file: " + base_dir + file_dir
 
         with open(base_dir + file_dir, "r") as html:
             # removes pesky unicode characters
@@ -117,7 +126,7 @@ def parse_files(base_dir, dict, output_dir, totalFiles):
                 soup = BeautifulSoup.BeautifulSoup(
                     html, convertEntities=BeautifulSoup.BeautifulStoneSoup.HTML_ENTITIES)
 
-                get_visable_text(soup, file_dir)
+                totalTerms = get_visable_text(soup, file_dir, totalTerms)
                 soup.close()
 
             except ValueError:
@@ -132,9 +141,10 @@ def parse_files(base_dir, dict, output_dir, totalFiles):
 
                 with open("C:\\Users\\alyss\\Desktop\\cs121\\errors.txt", 'a') as f:
                     f.write( str(base_dir + file_dir) )
+            testTotal += 1
 
     print "All Files Exported to " + my_output_dir
-    return totalFiles
+    return [totalFiles, totalTerms]
 
 
 # NOTE:: The below funcitons deal with weirdness in the HTML
@@ -167,7 +177,7 @@ def alt_get_visable_text(soup, fileName):
                     else:
                         posDict[(fileName,clean_token)] = [position]
                     position += 1
-                    termFileDict[(fileName,clean_token)] +=1
+                    termFileDict[(fileName,clean_token)] += 1
 
     termFileCountDict[fileName] = position
 
@@ -212,12 +222,19 @@ def alt_parse_files(base_dir, dict, totalFiles):
     return totalFiles
 
 
+totalFiles = 1
+totalTerms = 1
 book = open_bookkeeping(my_base_dir)
-totalFiles = parse_files(my_base_dir, book, my_output_dir, totalFiles)
+results = parse_files(my_base_dir, book, my_output_dir, totalFiles, totalTerms)
+totalFile = results[0]
+totalTerms = results[1]
+
+
 
 if parse_fails:
     print "Retrying parse for bad html files..."
-    totalFiles = alt_parse_files(my_base_dir,parse_fails, totalFiles)
+    print parse_fails
+    #totalFiles = alt_parse_files(my_base_dir,parse_fails, totalFiles)
 
 
 
@@ -237,7 +254,7 @@ Insert files
 
 
 # Insert file name into database
-for key, value in fileDict:
+for key, value in fileDict.iteritems():
     inserted = 0
     fileInsert = ("INSERT IGNORE INTO `doc` (`id`,`name`, `url`, `total_terms`) VALUES (%s, %s, %s, %s)")
     cursor.execute(fileInsert,(value, key, fileNameDict[key], termFileCountDict[key]))
@@ -250,8 +267,9 @@ for key, value in fileDict:
 cnx.commit()
 
 # Insert all terms into the database
-for key, value in termDict:
+for key, value in termDict.iteritems():
     inserted = 0
+
     fileInsert = ("INSERT INTO `term` (`id`,`name`, `total_frequency`) VALUES (%s, %s, %s)")
     cursor.execute(fileInsert, (value, key, freqDict[key]))
 
@@ -263,8 +281,9 @@ cnx.commit()
 
 
 # Insert the number of times a term was in a doc
-for key, value in termFileDict:
+for key, value in termFileDict.iteritems():
     inserted = 0
+
     fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`) VALUES (%s, %s, %s)")
     cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], value))
 
@@ -276,7 +295,7 @@ cnx.commit()
 
 
 # Insert all of the positions for each word in each doc
-for key, value in posDict:
+for key, value in posDict.iteritems():
     for position in value:
         inserted = 0
         fileInsert = ("INSERT INTO `position_list` (`doc_id`,`term_id`, `position`) VALUES (%s, %s, %s)")
