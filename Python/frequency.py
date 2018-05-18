@@ -4,8 +4,8 @@ import nltk
 from nltk.corpus import stopwords
 from collections import defaultdict
 import re
-import os
 import json
+import math
 
 
 my_base_dir = 'C:\\Users\\alyss\\Desktop\\cs121\\WEBPAGES\\WEBPAGES_RAW\\'
@@ -25,7 +25,9 @@ termDict = defaultdict(int)
 freqDict = defaultdict(int)
 termFileDict = defaultdict(int)
 termFileCountDict = defaultdict(int)
-
+termDocCountDict = defaultdict(int)
+idf_Dict = defaultdict(float)
+tf_idf_Dict = defaultdict(float)
 
 def open_bookkeeping(base_dir):
     # open book keeping file
@@ -75,6 +77,7 @@ def get_visable_text(soup, fileName, totalTerms):
 
                     else:
                         posDict[(fileName,clean_token)] = [position]
+                        termDocCountDict[clean_token] += 1
 
                     position += 1
                     termFileDict[(fileName,clean_token)] += 1
@@ -89,6 +92,55 @@ def get_visable_text(soup, fileName, totalTerms):
     termFileCountDict[fileName] = position
     return totalTerms
 
+"""
+def get_meta_data(soup, fileName):
+    '''
+    Give a beautiful soup object, tokenizes selected text, inserts
+    into a dictionary keeping track of the frequency of each term.
+    :param soup: A beautiful soup object for a HTML page
+    :return: Above mentioned dictionary
+    '''
+    text = soup.findAll(text=True)
+    visable_text = filter(is_visable, text)
+
+
+    position = 0
+    for line in visable_text:
+        if line != u' ' and line != u'\n':
+            for token in line.split():
+                # removes non-alphanumeric characters
+                clean_token = alphanumeric.sub('', token.lower())
+
+                if clean_token and (clean_token not in stopwords.words("english")) and \
+                        (1 < len(clean_token) < 46) and (not clean_token.isdigit()):
+
+                    if termDict.has_key(clean_token):
+                        freqDict[clean_token] += 1
+                    else:
+                        termDict[clean_token] = totalTerms
+                        freqDict[clean_token] = 1
+                        totalTerms += 1
+
+
+                    if posDict.has_key((fileName, clean_token)):
+                        posDict[(fileName, clean_token)].append(position)
+
+                    else:
+                        posDict[(fileName,clean_token)] = [position]
+
+                    position += 1
+                    termFileDict[(fileName,clean_token)] += 1
+
+                # if token is non empty AND
+                # token is a number AND
+                # token is less than 10 characters long
+                elif clean_token and clean_token.isdigit() and len(clean_token) < 10:
+                    with open("C:\\Users\\alyss\\Desktop\\cs121\\numbers.txt", "a") as f:
+                        f.write(clean_token + ", ")
+
+    termFileCountDict[fileName] = position
+    return totalTerms
+"""
 
 
 # driver...runs through all HTML files, receives term-frequency dict
@@ -107,11 +159,13 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
     :return: None
     '''
 
-    testTotal = 0;
+    testNumber = 0
 
     for file_dir in dict:
-        if(testTotal > 10):
-            break;
+
+        if testNumber > 10:
+            break
+
         print "Processing file: ", base_dir + file_dir, " Count: ", totalFiles
 
         fileDict[file_dir] = totalFiles
@@ -141,93 +195,21 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
 
                 with open("C:\\Users\\alyss\\Desktop\\cs121\\errors.txt", 'a') as f:
                     f.write( str(base_dir + file_dir) )
-            testTotal += 1
+
+        testNumber += 1
 
     print "All Files Exported to " + my_output_dir
     return [totalFiles, totalTerms]
 
 
-# NOTE:: The below funcitons deal with weirdness in the HTML
-# They follow the same procedures as the above functions but do
-# something a bit differently when passing to beautiful soup
 
-
-def alt_get_visable_text(soup, fileName):
-    text = soup.findAll(text=True)
-    visable_text = filter(is_visable, text)
-
-    position = 0
-    for line in visable_text:
-        line = badascii.sub(' ', line)
-
-        if line != u' ' and line != u'\n':
-            for token in line.split():
-                # removes non-alphanumeric characters
-                clean_token = alphanumeric.sub('', token.lower())
-
-                # ensure token is not an empty string or stop-word
-                if clean_token and clean_token not in stopwords.words("english"):
-                    if termDict.has_key(clean_token):
-                        freqDict[clean_token] += 1
-                    else:
-                        termDict[clean_token] = 1
-                        freqDict[clean_token] = 1
-                    if posDict.has_key((fileName,clean_token)):
-                        posDict[(fileName,clean_token)].append(position)
-                    else:
-                        posDict[(fileName,clean_token)] = [position]
-                    position += 1
-                    termFileDict[(fileName,clean_token)] += 1
-
-    termFileCountDict[fileName] = position
-
-
-
-def alt_parse_files(base_dir, dict, totalFiles):
-    for file_dir in dict:
-
-        fileDict[file_dir] = totalFiles
-        fileNameDict[file_dir] = dict[file_dir]
-        fileRefCountDict[dict[file_dir]] = 0
-        totalFiles += 1
-
-        print "Processing Alt file: " + base_dir + file_dir
-
-        with open(base_dir + file_dir, "r") as html:
-            # removes pesky unicode characters
-            html = html.read()
-
-            try:
-                soup = BeautifulSoup.BeautifulSoup(
-                    html)
-
-                get_visable_text(soup, file_dir)
-                soup.close()
-
-
-            except ValueError:
-                print "BAD HTML: Error processing file: " + base_dir + file_dir
-
-                with open("C:\\Users\\alyss\\Desktop\\cs121\\errors.txt", 'a') as f:
-                    f.write( str(base_dir + file_dir) )
-
-            except Exception:
-                print "UNKNOWN: Error processing file:" + base_dir + file_dir
-
-                with open("C:\\Users\\alyss\\Desktop\\cs121\\errors.txt", 'a') as f:
-                    f.write( str(base_dir + file_dir) )
-
-
-    print "All Files Exported to " + my_output_dir
-    return totalFiles
-
-
-totalFiles = 1
-totalTerms = 1
+totalFiles = 0
+totalTerms = 0
 book = open_bookkeeping(my_base_dir)
 results = parse_files(my_base_dir, book, my_output_dir, totalFiles, totalTerms)
 totalFile = results[0]
 totalTerms = results[1]
+
 
 
 
@@ -239,8 +221,25 @@ if parse_fails:
 
 
 
+'''
+get idf
+'''
 
-cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='searchEngine')
+
+
+for key, value in termDict.iteritems():
+    idf_Dict[value] = math.log(1.0 * totalFiles / (termDocCountDict[key] * 1.0), 10)
+
+
+for key, value in termFileDict.iteritems():
+    tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])] = ((1 + (math.log(value), 10)) * idf_Dict[termDict[key[1]]])
+
+
+
+
+
+
+cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='testData')
 
 if (cnx.is_connected()):
     print "Connection Passes"
@@ -250,7 +249,6 @@ cursor = cnx.cursor(buffered=True)
 """
 Insert files
 """
-
 
 
 # Insert file name into database
@@ -284,8 +282,8 @@ cnx.commit()
 for key, value in termFileDict.iteritems():
     inserted = 0
 
-    fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`) VALUES (%s, %s, %s)")
-    cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], value))
+    fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`, `tf-idf`) VALUES (%s, %s, %s)")
+    cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], value, tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])]))
 
     inserted += 1
 
@@ -309,6 +307,7 @@ for key, value in posDict.iteritems():
 cnx.commit()
 cursor.close()
 cnx.close()
+
 
 
 """
