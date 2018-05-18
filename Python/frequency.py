@@ -6,18 +6,7 @@ from collections import defaultdict
 import re
 import os
 import json
-#import enchant
 
-cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='cs121')
-
-if (cnx.is_connected()):
-    print "test"
-
-cursor = cnx.cursor(buffered=True)
-
-'''
-Brooke's code
-'''
 
 my_base_dir = 'C:\\Users\\alyss\\Desktop\\cs121\\WEBPAGES\\WEBPAGES_RAW\\'
 my_output_dir = "C:\\Users\\alyss\\Desktop\\cs121\\JSON Output"
@@ -27,8 +16,16 @@ alphanumeric = re.compile('[^a-zA-Z0-9\'-]+')
 badascii = re.compile('&(#[\d]+[;]{0,1})')
 parse_fails = []
 
-#d = enchant.Dict("en_US")
-
+fileRefCountDict= defaultdict(int)
+fileDict = defaultdict(int)
+fileNameDict = defaultdict(str)
+metaDict = defaultdict(int)
+posDict = defaultdict(list)
+termDict = defaultdict(int)
+freqDict = defaultdict(int)
+termFileDict = defaultdict(int)
+termFileCountDict = defaultdict(int)
+totalFiles = 0
 
 def open_bookkeeping(base_dir):
     # open book keeping file
@@ -44,7 +41,7 @@ def is_visable(element):
 # tokenization & term-frequency calculation
 
 
-def get_visable_text(soup, docID):
+def get_visable_text(soup, fileName):
     '''
     Give a beautiful soup object, tokenizes selected text, inserts
     into a dictionary keeping track of the frequency of each term.
@@ -53,7 +50,7 @@ def get_visable_text(soup, docID):
     '''
     text = soup.findAll(text=True)
     visable_text = filter(is_visable, text)
-    token_dict = defaultdict(int)
+
 
     position = 0
     for line in visable_text:
@@ -64,25 +61,18 @@ def get_visable_text(soup, docID):
 
                 if clean_token and (clean_token not in stopwords.words("english")) and \
                         (1 < len(clean_token) < 46) and (not clean_token.isdigit()):
-                    token_dict[clean_token] += 1
 
-                    queryInsert = ("INSERT INTO `term` (`name`, `total_frequency`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE `total_frequency` = `total_frequency` + 1")
-                    cursor.execute(queryInsert, (clean_token, 1))
-                    cnx.commit()
-
-                    querySelect = ("SELECT `id` FROM `term` WHERE `name` = %s")
-                    cursor.execute(querySelect, (clean_token,))
-                    cnx.commit()
-
-                    for id in cursor:
-                        termID = id[0]
-
-
-                    docInsert = ("INSERT INTO `term_in_doc` (`doc_id`, `term_id`, `frequency`) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE `frequency` = `frequency` + 1")
-                    cursor.execute(docInsert, (docID, termID, 1))
-                    cnx.commit()
-
-                    #and d.check(clean_token)
+                    if termDict.has_key(clean_token):
+                        freqDict[clean_token] += 1
+                    else:
+                        termDict[clean_token] = 1
+                        freqDict[clean_token] = 1
+                    if posDict.has_key((fileName,clean_token)):
+                        posDict[(fileName,clean_token)].append(position)
+                    else:
+                        posDict[(fileName,clean_token)] = [position]
+                    position += 1
+                    termFileDict[(fileName,clean_token)] +=1
 
                 # if token is non empty AND
                 # token is a number AND
@@ -91,19 +81,15 @@ def get_visable_text(soup, docID):
                     with open("C:\\Users\\alyss\\Desktop\\cs121\\numbers.txt", "a") as f:
                         f.write(clean_token + ", ")
 
-                position = position + 1
-                cnx.commit()
+    termFileCountDict[fileName] = position
 
-    docUpdate = ("UPDATE `doc` SET `total_terms` = %s WHERE `id` = %s")
-    cursor.execute(docUpdate, (position, docID))
-    cnx.commit()
-    return token_dict
+
 
 # driver...runs through all HTML files, receives term-frequency dict
 # and outputs to file
 
 
-def parse_files(base_dir, dict, output_dir):
+def parse_files(base_dir, dict, output_dir, totalFiles):
     '''
     For each file in WEBPAGES_RAW we pass into beautiful soup and
     receive the term-frequency dictionary for each document via
@@ -114,20 +100,13 @@ def parse_files(base_dir, dict, output_dir):
     each document (I choose to put this in WEBPAGES_JSON
     :return: None
     '''
+
+
     for file_dir in dict:
-
-        # Insert file name into database
-        query = ("INSERT IGNORE INTO `doc` (`name`, `total_terms`) VALUES (%s, %s)")
-        cursor.execute(query, (file_dir, 1))
-        cnx.commit()
-
-        # Get docID from database
-        query = ("SELECT `id` FROM `doc` WHERE `name` = %s")
-        cursor.execute(query, (file_dir,))
-        cnx.commit()
-
-        for id in cursor:
-            docID = id[0]
+        fileDict[file_dir] = totalFiles
+        fileNameDict[file_dir] = dict[file_dir]
+        fileRefCountDict[dict[file_dir]] = 0
+        totalFiles += 1
 
         print "Processing file: " + base_dir + file_dir
 
@@ -137,22 +116,9 @@ def parse_files(base_dir, dict, output_dir):
             try:
                 soup = BeautifulSoup.BeautifulSoup(
                     html, convertEntities=BeautifulSoup.BeautifulStoneSoup.HTML_ENTITIES)
-                token_dict = get_visable_text(soup, docID)
+
+                get_visable_text(soup, file_dir)
                 soup.close()
-
-                output_file = output_dir + file_dir + ".json"
-
-                if not os.path.exists(os.path.dirname(output_file)):
-                    try:
-                        os.makedirs(os.path.dirname(output_file))
-                    except OSError as exc:  # Guard against race condition
-                        raise
-
-                with open(output_file, 'w') as f:
-                    json.dump(token_dict, f)
-                #print "File Complete"
-
-
 
             except ValueError:
                 print "BAD HTML: Error processing file: " + base_dir + file_dir
@@ -166,9 +132,9 @@ def parse_files(base_dir, dict, output_dir):
 
                 with open("C:\\Users\\alyss\\Desktop\\cs121\\errors.txt", 'a') as f:
                     f.write( str(base_dir + file_dir) )
-        cnx.commit()
 
     print "All Files Exported to " + my_output_dir
+    return totalFiles
 
 
 # NOTE:: The below funcitons deal with weirdness in the HTML
@@ -176,14 +142,14 @@ def parse_files(base_dir, dict, output_dir):
 # something a bit differently when passing to beautiful soup
 
 
-def alt_get_visable_text(soup, docID):
+def alt_get_visable_text(soup, fileName):
     text = soup.findAll(text=True)
     visable_text = filter(is_visable, text)
-    token_dict = defaultdict(int)
 
+    position = 0
     for line in visable_text:
         line = badascii.sub(' ', line)
-        #print line
+
         if line != u' ' and line != u'\n':
             for token in line.split():
                 # removes non-alphanumeric characters
@@ -191,61 +157,43 @@ def alt_get_visable_text(soup, docID):
 
                 # ensure token is not an empty string or stop-word
                 if clean_token and clean_token not in stopwords.words("english"):
-                    token_dict[clean_token] += 1
-                    queryInsert = ("INSERT INTO `term` (`name`, `total_frequency`) VALUES (%s, %s) ON DUPLICATE KEY UPDATE `total_frequency` = `total_frequency` + 1")
-                    cursor.execute(queryInsert, (clean_token, 1))
-                    cnx.commit()
+                    if termDict.has_key(clean_token):
+                        freqDict[clean_token] += 1
+                    else:
+                        termDict[clean_token] = 1
+                        freqDict[clean_token] = 1
+                    if posDict.has_key((fileName,clean_token)):
+                        posDict[(fileName,clean_token)].append(position)
+                    else:
+                        posDict[(fileName,clean_token)] = [position]
+                    position += 1
+                    termFileDict[(fileName,clean_token)] +=1
 
-                    querySelect = ("SELECT `id` FROM `term` WHERE `name` = %s")
-                    cursor.execute(querySelect, (clean_token,))
-                    cnx.commit()
-
-                    for id in cursor:
-                        termID = id[0]
-
-                    docInsert = ("INSERT INTO `term_in_doc` (`doc_id`, `term_id`, `frequency`) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE `frequency` = `frequency` + 1")
-                    cursor.execute(docInsert, (docID, termID, 1))
-                    cnx.commit()
-
-    return token_dict
+    termFileCountDict[fileName] = position
 
 
-def alt_parse_files(base_dir, dict):
+
+def alt_parse_files(base_dir, dict, totalFiles):
     for file_dir in dict:
 
-        # Insert file name into database
-        query = ("INSERT IGNORE INTO `doc` (`name`, `total_terms`) VALUES (%s, %s)")
-        cursor.execute(query, (file_dir, 1))
-        cnx.commit()
+        fileDict[file_dir] = totalFiles
+        fileNameDict[file_dir] = dict[file_dir]
+        fileRefCountDict[dict[file_dir]] = 0
+        totalFiles += 1
 
-        # Get docID from database
-        query = ("SELECT `id` FROM `doc` WHERE `name` = %s")
-        cursor.execute(query, (file_dir,))
-        cnx.commit()
-
-        print "Processing file: " + base_dir + file_dir
+        print "Processing Alt file: " + base_dir + file_dir
 
         with open(base_dir + file_dir, "r") as html:
             # removes pesky unicode characters
-            html = html.read()#.decode('utf-8')#read().decode('ascii', 'ignore').encode('utf-8')
+            html = html.read()
 
             try:
                 soup = BeautifulSoup.BeautifulSoup(
-                    html) #, convertEntities=BeautifulSoup.BeautifulStoneSoup.HTML_ENTITIES)
-                token_dict = get_visable_text(soup)
+                    html)
+
+                get_visable_text(soup, file_dir)
                 soup.close()
 
-                output_file = my_output_dir + file_dir + ".json"
-
-                if not os.path.exists(os.path.dirname(output_file)):
-                    try:
-                        os.makedirs(os.path.dirname(output_file))
-                    except OSError as exc:  # Guard against race condition
-                        raise
-
-                with open(output_file, 'w') as f:
-                    json.dump(token_dict, f)
-                #print "File Complete"
 
             except ValueError:
                 print "BAD HTML: Error processing file: " + base_dir + file_dir
@@ -261,17 +209,85 @@ def alt_parse_files(base_dir, dict):
 
 
     print "All Files Exported to " + my_output_dir
+    return totalFiles
 
 
 book = open_bookkeeping(my_base_dir)
-parse_files(my_base_dir, book, my_output_dir)
+totalFiles = parse_files(my_base_dir, book, my_output_dir, totalFiles)
 
 if parse_fails:
     print "Retrying parse for bad html files..."
-    alt_parse_files(my_base_dir,parse_fails)
+    totalFiles = alt_parse_files(my_base_dir,parse_fails, totalFiles)
 
 
 
+
+
+cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='searchEngine')
+
+if (cnx.is_connected()):
+    print "Connection Passes"
+
+cursor = cnx.cursor(buffered=True)
+
+"""
+Insert files
+"""
+
+
+
+# Insert file name into database
+for key, value in fileDict:
+    inserted = 0
+    fileInsert = ("INSERT IGNORE INTO `doc` (`id`,`name`, `url`, `total_terms`) VALUES (%s, %s, %s, %s)")
+    cursor.execute(fileInsert,(value, key, fileNameDict[key], termFileCountDict[key]))
+
+    inserted += 1
+
+    if(inserted % 1000 == 0):
+        cnx.commit()
+
+cnx.commit()
+
+# Insert all terms into the database
+for key, value in termDict:
+    inserted = 0
+    fileInsert = ("INSERT INTO `term` (`id`,`name`, `total_frequency`) VALUES (%s, %s, %s)")
+    cursor.execute(fileInsert, (value, key, freqDict[key]))
+
+    inserted += 1
+
+    if (inserted % 1000 == 0):
+        cnx.commit()
+cnx.commit()
+
+
+# Insert the number of times a term was in a doc
+for key, value in termFileDict:
+    inserted = 0
+    fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`) VALUES (%s, %s, %s)")
+    cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], value))
+
+    inserted += 1
+
+    if (inserted % 1000 == 0):
+        cnx.commit()
+cnx.commit()
+
+
+# Insert all of the positions for each word in each doc
+for key, value in posDict:
+    for position in value:
+        inserted = 0
+        fileInsert = ("INSERT INTO `position_list` (`doc_id`,`term_id`, `position`) VALUES (%s, %s, %s)")
+        cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], position))
+
+        inserted += 1
+
+        if (inserted % 1000 == 0):
+            cnx.commit()
+
+cnx.commit()
 cursor.close()
 cnx.close()
 
