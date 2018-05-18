@@ -1,0 +1,36 @@
+Information about the files everywhere
+
+frequency.py should be run before index_construction.py
+
+
+myinvertedindex.json
+- this is a big boy
+- the full index of form {"term": [[tf-idf, docID], ..., [tf-idf, docID]}
+
+tf-idf/...
+- this directory's structure is identical to /WEBPAGES_RAW
+- for each document it holds a file tf_idf.json
+- this document holds the tf_idf score for each term
+- form of {"term" : tf-idf}
+
+df_t_sorted.json
+- the df_t.json file sorted by count
+- this is not relevant for putting in the DB just for looking at the
+- data
+
+df_t.json
+- holds the document frequency for each term
+- stored in the form {"term" : count}
+
+
+WEBPAGES_JSON/...
+- this directory's structure is identical to /WEBPAGES_RAW
+- for each document it holds two files:
+    - 1. a json file holding the term frequency for this document
+    -    form of: {"term": count}
+    - 2. a json file (ending in _tf) holding the "weighted" term
+    -    frequency (w_{t,d} = 1 + log tf_{t,d})
+    -    for this document form of: {"term": count}
+
+WEBPAGES_RAW/...
+    - nothing new here, original input directory
