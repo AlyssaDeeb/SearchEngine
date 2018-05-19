@@ -92,55 +92,28 @@ def get_visable_text(soup, fileName, totalTerms):
     termFileCountDict[fileName] = position
     return totalTerms
 
-"""
+
 def get_meta_data(soup, fileName):
     '''
-    Give a beautiful soup object, tokenizes selected text, inserts
-    into a dictionary keeping track of the frequency of each term.
+    Give a beautiful soup object, tokenizes meta title and header tags to update frequency count,
+    additionally updates all link references to bookkeeping links.
     :param soup: A beautiful soup object for a HTML page
+    :param fileName file currently being parsed
     :return: Above mentioned dictionary
     '''
-    text = soup.findAll(text=True)
-    visable_text = filter(is_visable, text)
 
+    for a in soup.findAll('a', href=True):  # use BeautifulSoup to find all hyperlinks tagged  as href
+        if fileRefCountDict.has_key(a['href']):
+            fileRefCountDict[a['href']] += 1
+    for a in soup.findAll(['title', 'h1', 'h2', 'h3']):
+        for token in a.text.split():
+            token = alphanumeric.sub('', token.lower())
 
-    position = 0
-    for line in visable_text:
-        if line != u' ' and line != u'\n':
-            for token in line.split():
-                # removes non-alphanumeric characters
-                clean_token = alphanumeric.sub('', token.lower())
+            if token and (token not in stopwords.words("english")) and \
+                        (1 < len(token) < 46) and (not token.isdigit()):
 
-                if clean_token and (clean_token not in stopwords.words("english")) and \
-                        (1 < len(clean_token) < 46) and (not clean_token.isdigit()):
-
-                    if termDict.has_key(clean_token):
-                        freqDict[clean_token] += 1
-                    else:
-                        termDict[clean_token] = totalTerms
-                        freqDict[clean_token] = 1
-                        totalTerms += 1
-
-
-                    if posDict.has_key((fileName, clean_token)):
-                        posDict[(fileName, clean_token)].append(position)
-
-                    else:
-                        posDict[(fileName,clean_token)] = [position]
-
-                    position += 1
-                    termFileDict[(fileName,clean_token)] += 1
-
-                # if token is non empty AND
-                # token is a number AND
-                # token is less than 10 characters long
-                elif clean_token and clean_token.isdigit() and len(clean_token) < 10:
-                    with open("C:\\Users\\alyss\\Desktop\\cs121\\numbers.txt", "a") as f:
-                        f.write(clean_token + ", ")
-
-    termFileCountDict[fileName] = position
-    return totalTerms
-"""
+                if termFileDict.has_key((fileName,token)):
+                    metaDict[(fileDict[fileName], termDict[token])] += 1
 
 
 # driver...runs through all HTML files, receives term-frequency dict
@@ -159,12 +132,8 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
     :return: None
     '''
 
-    testNumber = 0
 
     for file_dir in dict:
-
-        if testNumber > 10:
-            break
 
         print "Processing file: ", base_dir + file_dir, " Count: ", totalFiles
 
@@ -181,6 +150,7 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
                     html, convertEntities=BeautifulSoup.BeautifulStoneSoup.HTML_ENTITIES)
 
                 totalTerms = get_visable_text(soup, file_dir, totalTerms)
+                get_meta_data(soup, file_dir)
                 soup.close()
 
             except ValueError:
@@ -196,7 +166,6 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
                 with open("C:\\Users\\alyss\\Desktop\\cs121\\errors.txt", 'a') as f:
                     f.write( str(base_dir + file_dir) )
 
-        testNumber += 1
 
     print "All Files Exported to " + my_output_dir
     return [totalFiles, totalTerms]
@@ -213,7 +182,7 @@ totalTerms = results[1] - 1
 if parse_fails:
     print "Retrying parse for bad html files..."
     print parse_fails
-    #totalFiles = alt_parse_files(my_base_dir,parse_fails, totalFiles)
+
 
 
 '''
@@ -243,8 +212,8 @@ cursor = cnx.cursor(buffered=True)
 # Insert file name into database
 for key, value in fileDict.iteritems():
     inserted = 0
-    fileInsert = ("INSERT IGNORE INTO `doc` (`id`,`name`, `url`, `total_terms`) VALUES (%s, %s, %s, %s)")
-    cursor.execute(fileInsert,(value, key, fileNameDict[key], termFileCountDict[key]))
+    fileInsert = ("INSERT IGNORE INTO `doc` (`id`,`name`, `url`, `total_terms`, `references`) VALUES (%s, %s, %s, %s, %s)")
+    cursor.execute(fileInsert,(value, key, fileNameDict[key], termFileCountDict[key], fileRefCountDict[fileNameDict[key]]))
 
     inserted += 1
 
@@ -272,7 +241,7 @@ for key, value in termFileDict.iteritems():
     inserted = 0
 
     fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`, `tf-idf`) VALUES (%s, %s, %s, %s)")
-    cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], value, tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])]))
+    cursor.execute(fileInsert,(fileDict[key[0]], termDict[key[1]], value, tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])]))
 
     inserted += 1
 
@@ -292,6 +261,18 @@ for key, value in posDict.iteritems():
 
         if (inserted % 1000 == 0):
             cnx.commit()
+
+for key, value in metaDict.iteritems():
+    inserted = 0
+
+    fileInsert = ("UPDATE `term_in_doc` SET  `meta_frequency` = %s WHERE `doc_id` = %s AND `term_id` = %s")
+    cursor.execute(fileInsert, (value, key[0], key[1]))
+
+    inserted += 1
+
+    if (inserted % 1000 == 0):
+        cnx.commit()
+
 
 cnx.commit()
 cursor.close()
