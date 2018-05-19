@@ -72,11 +72,14 @@ def get_visable_text(soup, fileName, totalTerms):
                         totalTerms += 1
 
 
-                    if posDict.has_key((fileName, clean_token)):
-                        posDict[(fileName, clean_token)].append(position)
+                   # if posDict.has_key((fileName, clean_token)):
+                   #     posDict[(fileName, clean_token)].append(position)
+                   #
+                   #else:
+                   #     posDict[(fileName,clean_token)] = [position]
+                    #    termDocCountDict[clean_token] += 1
 
-                    else:
-                        posDict[(fileName,clean_token)] = [position]
+                    if not posDict.has_key((fileName, clean_token)):
                         termDocCountDict[clean_token] += 1
 
                     position += 1
@@ -134,6 +137,7 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
 
 
     for file_dir in dict:
+
 
         print "Processing file: ", base_dir + file_dir, " Count: ", totalFiles
 
@@ -200,7 +204,7 @@ for key, value in termFileDict.iteritems():
 '''
 enter into database
 '''
-cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='testData')
+cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='searchEngine')
 
 if (cnx.is_connected()):
     print "Connection Passes"
@@ -251,16 +255,16 @@ cnx.commit()
 
 
 # Insert all of the positions for each word in each doc
-for key, value in posDict.iteritems():
-    for position in value:
-        inserted = 0
-        fileInsert = ("INSERT INTO `position_list` (`doc_id`,`term_id`, `position`) VALUES (%s, %s, %s)")
-        cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], position))
-
-        inserted += 1
-
-        if (inserted % 1000 == 0):
-            cnx.commit()
+#for key, value in posDict.iteritems():
+#    for position in value:
+#        inserted = 0
+#        fileInsert = ("INSERT INTO `position_list` (`doc_id`,`term_id`, `position`) VALUES (%s, %s, %s)")
+#        cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], position))
+#
+#        inserted += 1
+#
+#        if (inserted % 1000 == 0):
+#            cnx.commit()
 
 for key, value in metaDict.iteritems():
     inserted = 0
