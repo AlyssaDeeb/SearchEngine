@@ -19,6 +19,7 @@ parse_fails = []
 fileRefCountDict= defaultdict(int)
 fileDict = defaultdict(int)
 fileNameDict = defaultdict(str)
+absoluteURLDict = defaultdict(str)
 metaDict = defaultdict(int)
 posDict = defaultdict(list)
 termDict = defaultdict(int)
@@ -37,7 +38,7 @@ def open_bookkeeping(base_dir):
 
 def is_visable(element):
     return element.parent.name not in \
-           ['head', 'title', 'meta', 'script', 'css', 'href', 'link', 'img', 'dl', 'a', 'style', '[document]'] and \
+           ['head', 'meta', 'script', 'css', 'href', 'link', 'img', 'dl', 'a', 'style', '[document]'] and \
            not isinstance(element, BeautifulSoup.Comment)
 
 # tokenization & term-frequency calculation
@@ -106,8 +107,9 @@ def get_meta_data(soup, fileName):
     '''
 
     for a in soup.findAll('a', href=True):  # use BeautifulSoup to find all hyperlinks tagged  as href
-        if fileRefCountDict.has_key(a['href']):
-            fileRefCountDict[a['href']] += 1
+        url = a['href'].replace("www.", "").replace("http://", "").replace("https://", "")
+        if absoluteURLDict.has_key(url):
+            fileRefCountDict[absoluteURLDict[url]] += 1
     for a in soup.findAll(['title', 'h1', 'h2', 'h3']):
         for token in a.text.split():
             token = alphanumeric.sub('', token.lower())
@@ -142,6 +144,8 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
         print "Processing file: ", base_dir + file_dir, " Count: ", totalFiles
 
         fileDict[file_dir] = totalFiles
+        url = dict[file_dir].replace("www.", "").replace("http://", "").replace("https://", "")
+        absoluteURLDict[url] = dict[file_dir]
         fileNameDict[file_dir] = dict[file_dir]
         fileRefCountDict[dict[file_dir]] = 0
         totalFiles += 1
