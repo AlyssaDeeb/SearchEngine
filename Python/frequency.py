@@ -202,15 +202,12 @@ def parse_files(base_dir, dict, output_dir, totalFiles, totalTerms):
     return [totalFiles, totalTerms]
 
 
-
-totalFiles = 0
-totalTerms = 0
+totalFiles = 1
+totalTerms = 1
 book = open_bookkeeping(my_base_dir)
 results = parse_files(my_base_dir, book, my_output_dir, totalFiles, totalTerms)
-totalFile = results[0]
-totalTerms = results[1]
-
-
+totalFile = results[0] - 1
+totalTerms = results[1] - 1
 
 
 if parse_fails:
@@ -219,26 +216,21 @@ if parse_fails:
     #totalFiles = alt_parse_files(my_base_dir,parse_fails, totalFiles)
 
 
-
-
 '''
-get idf
+get tf-idf
 '''
-
-
-
 for key, value in termDict.iteritems():
-    idf_Dict[value] = math.log(1.0 * totalFiles / (termDocCountDict[key] * 1.0), 10)
+    idf_Dict[value] = math.log(((1.0 * totalFile) / ((termDocCountDict[key] * 1.0))), 10)
 
 
 for key, value in termFileDict.iteritems():
-    tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])] = ((1 + (math.log(value), 10)) * idf_Dict[termDict[key[1]]])
+    tf_idf_value = (1 + math.log(1.0 * value, 10)) * idf_Dict[termDict[key[1]]]
+    tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])] = tf_idf_value
 
 
-
-
-
-
+'''
+enter into database
+'''
 cnx = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='testData')
 
 if (cnx.is_connected()):
@@ -246,9 +238,6 @@ if (cnx.is_connected()):
 
 cursor = cnx.cursor(buffered=True)
 
-"""
-Insert files
-"""
 
 
 # Insert file name into database
@@ -282,7 +271,7 @@ cnx.commit()
 for key, value in termFileDict.iteritems():
     inserted = 0
 
-    fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`, `tf-idf`) VALUES (%s, %s, %s)")
+    fileInsert = ("INSERT INTO `term_in_doc` (`doc_id`,`term_id`, `frequency`, `tf-idf`) VALUES (%s, %s, %s, %s)")
     cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], value, tf_idf_Dict[(fileDict[key[0]], termDict[key[1]])]))
 
     inserted += 1
