@@ -1,57 +1,39 @@
+import mysql.connector
 import BeautifulSoup
 import nltk
 from nltk.corpus import stopwords
 from collections import defaultdict
 import re
-import os
-import json
-import enchant
-import operator
-
-index_dir = "/Users/brooke/Documents/Coursework/UC Irvine/CS121/" \
-              "CS121_Project4/myinvertedindex.json"
-
-book_dir = "/Users/brooke/Documents/Coursework/UC Irvine/CS121/" \
-              "CS121_Project4/WEBPAGES_RAW/"
 
 
-def open_bookkeeping(base_dir):
-    # open book keeping file
-    with open(base_dir + "/bookkeeping.json", 'r') as bookkeeping:
-        return json.load(bookkeeping)
+def query_index(cursor, terms, limit=10):
 
+    query = ("SELECT  d.name, d.url FROM doc d INNER JOIN term_in_doc td on d.id = td.doc_id INNER JOIN term t on t.id = td.term_id WHERE t.name = %s LIMIT %s")
+    cursor.execute(query,(terms,limit))
 
-def init_index(index_directory):
-    '''
-    Opens the inverted index and returns the dictionary containing it
-    :param index_directory: file path to inverted index
-    :return: inverted index dictionary
-    '''
-    with open(index_directory, 'r') as f:
-        return json.load(f)
+    for (id, url) in cursor:
+        print url
 
-
-def query_index(index_dict, doc_dict, query, limit=10):
-    if query not in index_dict:
+    if cursor.rowcount == -1:
         print "No results found"
-        return
 
-    term_postingslist = index_dict[query]
-    result_set = sorted(term_postingslist, key=operator.itemgetter(0), reverse=True)[:limit]
-    print "DocID\ttf-idf"
-    for result in result_set:
-        # commented code displays tf-idf score
-        print doc_dict[result[1]] + "\t" + str(result[0])
+    print ""
 
 
 def driver():
     print "Initializing Gago Search..."
-    index_dict = init_index(index_dir)
-    doc_dict = open_bookkeeping(book_dir)
+
+    connection = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='searchEngine')
+
+    if not (connection.is_connected()):
+        print "Connection Fails"
+        return
+
+    cursor = connection.cursor()
 
     while 1:
-        query_string = raw_input("Search term: ")
-        query_index(index_dict, doc_dict, query_string)
+        query_string = raw_input("Search term: ").lower()
+        query_index(cursor, query_string)
 
 
 driver()
