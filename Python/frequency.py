@@ -72,19 +72,17 @@ def get_visable_text(soup, fileName, totalTerms):
                         freqDict[clean_token] = 1
                         totalTerms += 1
 
-
-                   # if posDict.has_key((fileName, clean_token)):
-                   #     posDict[(fileName, clean_token)].append(position)
-                   #
-                   #else:
-                   #     posDict[(fileName,clean_token)] = [position]
-                    #    termDocCountDict[clean_token] += 1
-
-                    if not posDict.has_key((fileName, clean_token)):
+                    if posDict.has_key((fileName, clean_token)):
+                        posDict[(fileName, clean_token)].append(position)
+                    else:
+                        posDict[(fileName,clean_token)] = [position]
                         termDocCountDict[clean_token] += 1
 
-                    position += 1
-                    termFileDict[(fileName,clean_token)] += 1
+                        if not posDict.has_key((fileName, clean_token)):
+                            termDocCountDict[clean_token] += 1
+
+                        position += 1
+                        termFileDict[(fileName,clean_token)] += 1
 
                 # if token is non empty AND
                 # token is a number AND
@@ -229,6 +227,7 @@ for key, value in fileDict.iteritems():
         cnx.commit()
 
 cnx.commit()
+print("File insert complete. Starting term insert...")
 
 # Insert all terms into the database
 for key, value in termDict.iteritems():
@@ -242,7 +241,7 @@ for key, value in termDict.iteritems():
     if (inserted % 1000 == 0):
         cnx.commit()
 cnx.commit()
-
+print("Term insert complete. Starting termInFile insert...")
 
 # Insert the number of times a term was in a doc
 for key, value in termFileDict.iteritems():
@@ -256,19 +255,21 @@ for key, value in termFileDict.iteritems():
     if (inserted % 1000 == 0):
         cnx.commit()
 cnx.commit()
-
+print("TermInFile insert complete. Starting position insert...")
 
 # Insert all of the positions for each word in each doc
-#for key, value in posDict.iteritems():
-#    for position in value:
-#        inserted = 0
-#        fileInsert = ("INSERT INTO `position_list` (`doc_id`,`term_id`, `position`) VALUES (%s, %s, %s)")
-#        cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], position))
-#
-#        inserted += 1
-#
-#        if (inserted % 1000 == 0):
-#            cnx.commit()
+for key, value in posDict.iteritems():
+    for position in value:
+        inserted = 0
+        fileInsert = ("INSERT INTO `position_list` (`doc_id`,`term_id`, `position`) VALUES (%s, %s, %s)")
+        cursor.execute(fileInsert, (fileDict[key[0]], termDict[key[1]], position))
+
+        inserted += 1
+
+        if (inserted % 1000 == 0):
+            cnx.commit()
+cnx.commit()
+print("position insert complete. Starting metadata insert...")
 
 for key, value in metaDict.iteritems():
     inserted = 0
@@ -285,7 +286,7 @@ for key, value in metaDict.iteritems():
 cnx.commit()
 cursor.close()
 cnx.close()
-
+print("FINALLY DONE!!!")
 
 
 """
