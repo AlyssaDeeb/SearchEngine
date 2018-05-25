@@ -21,6 +21,18 @@ def clean_input():
 
     return cleaned_query_list
 
+def clean_input_NoPrompt(terms):
+    cleaned_query_list = []
+
+    for token in terms.split(' '):
+        clean_token = alphanumeric.sub('', token.lower().strip())
+
+        if clean_token and \
+                clean_token not in stopwords.words("english"):
+            cleaned_query_list.append(clean_token)
+
+    return cleaned_query_list
+
 
 def andQuery(cursor, terms, limit=20):
     numberTerms = len(terms)
@@ -78,6 +90,33 @@ def orQuery(cursor, terms, limit=20):
     print ""
     return results
 
+
+def webDriver(searchInput):
+
+    print searchInput
+    if not searchInput:
+        print "uh oh"
+    connection = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='searchEngine')
+
+    if not (connection.is_connected()):
+        print "Connection Fails"
+        return
+
+    cursor = connection.cursor()
+
+    results = []
+    query_terms = clean_input_NoPrompt(searchInput)
+
+    results = andQuery(cursor, query_terms)
+
+    if len(results) > 20:
+        results += orQuery(cursor, query_terms)
+
+    #for name, url in results:
+    #    print url
+    connection.close()
+    return results
+
 def driver():
     print "Initializing Gago Search..."
 
@@ -101,4 +140,4 @@ def driver():
         for name, url in results:
             print url
 
-driver()
+#driver()
