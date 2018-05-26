@@ -34,7 +34,7 @@ def clean_input_NoPrompt(terms):
     return cleaned_query_list
 
 
-def andQuery(cursor, terms, limit=20):
+def weightedAndQuery(cursor, terms, limit=20):
     numberTerms = len(terms)
     currentNumber = 0
     results = []
@@ -48,6 +48,64 @@ def andQuery(cursor, terms, limit=20):
 
     while currentNumber < numberTerms:
         query += " AND doc.id IN (SELECT DISTINCT term_in_doc.doc_id FROM term_in_doc, term WHERE term.name = %s AND term_in_doc.term_id = term.id ORDER BY `weighted_tf-idf` DESC)"
+        currentNumber += 1
+
+    query += "LIMIT " + str(limit)
+    cursor.execute(query, terms)
+
+    for link in cursor:
+        results.append(link)
+
+
+    if cursor.rowcount == -1:
+        print "No results found"
+
+    print ""
+    return results
+
+def weightedOrQuery(cursor, terms, limit=20):
+    numberTerms = len(terms)
+    currentNumber = 0
+    results = []
+
+    if numberTerms < 1:
+        return "No Results Found"
+
+    query = "SELECT d.name, d.url FROM doc d INNER JOIN term_in_doc td on d.id = td.doc_id INNER JOIN term t on t.id = td.term_id WHERE t.name = %s"
+    currentNumber += 1
+
+    while currentNumber < numberTerms:
+        query += "OR t.name = %s"
+        currentNumber += 1
+
+    query += "order by `weighted_tf-idf` desc LIMIT " + str(limit)
+    cursor.execute(query, terms)
+
+    for link in cursor:
+        results.append(link)
+
+    if cursor.rowcount == -1:
+        print "No results found"
+
+    print ""
+    return results
+
+
+
+def andQuery(cursor, terms, limit=20):
+    numberTerms = len(terms)
+    currentNumber = 0
+    results = []
+
+    if numberTerms < 1:
+        return "No Results Found"
+
+    query = "SELECT doc.name, doc.url FROM doc WHERE doc.id IN( SELECT DISTINCT term_in_doc.doc_id FROM term_in_doc, term WHERE term.name = %s AND term_in_doc.term_id = term.id ORDER BY `tf-idf` DESC) "
+
+    currentNumber += 1
+
+    while currentNumber < numberTerms:
+        query += " AND doc.id IN (SELECT DISTINCT term_in_doc.doc_id FROM term_in_doc, term WHERE term.name = %s AND term_in_doc.term_id = term.id ORDER BY `tf-idf` DESC)"
         currentNumber += 1
 
     query += "LIMIT " + str(limit)
@@ -78,7 +136,7 @@ def orQuery(cursor, terms, limit=20):
         query += "OR t.name = %s"
         currentNumber += 1
 
-    query += "order by `weighted_tf-idf` desc LIMIT " + str(limit)
+    query += "order by `tf-idf` desc LIMIT " + str(limit)
     cursor.execute(query, terms)
 
     for link in cursor:
@@ -91,7 +149,33 @@ def orQuery(cursor, terms, limit=20):
     return results
 
 
-def webDriver(searchInput):
+def weighted_tf_idf_Results(searchInput):
+
+    print searchInput
+    if not searchInput:
+        print "uh oh"
+    connection = mysql.connector.connect(user='test', password='123', host='127.0.0.1', database='searchEngine')
+
+    if not (connection.is_connected()):
+        print "Connection Fails"
+        return
+
+    cursor = connection.cursor()
+
+    results = []
+    query_terms = clean_input_NoPrompt(searchInput)
+
+    results = weightedAndQuery(cursor, query_terms)
+
+    if len(results) > 20:
+        results += weightedOrQuery(cursor, query_terms)
+
+    #for name, url in results:
+    #    print url
+    connection.close()
+    return results
+
+def tf_idf_Results(searchInput):
 
     print searchInput
     if not searchInput:

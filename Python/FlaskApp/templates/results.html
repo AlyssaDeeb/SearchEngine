@@ -73,12 +73,13 @@
                       <input type="text" name="inputQuery" id="inputQuery" class="form-control form-control-lg" style="margin-top: 50px;" placeholder="Enter query">
                       <ul class="nav nav-pills">
                             <li class="active">
-                                <a href="/results">Just URLs</a>
+                                <a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Just URLs</a>
                             </li>
-                            <li><a href="/informative">Informative</a></li>
+                            <li><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
 
                       </ul>
                   </div>
+
               </div>
               <div class="col-sm-1">
                   <button type="submit" style="margin-top: 50px;" class="btn btn-primary">Search</button>
@@ -86,9 +87,9 @@
           </div>
 		</form>
         <hr>
-           <ul class="nav nav-pills">
-            <li class="active"><a href="#">Basic td-idf</a></li>
-            <li><a href="#">Weighted tf-idf</a></li>
+        <ul class="nav nav-pills">
+            <li class="active"><a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Basic td-idf</a></li>
+            <li><a href="{{ url_for('showWeightedResults', inputQuery = inputQuery) }}">Weighted tf-idf</a></li>
             <li><a href="#">Positioning</a></li>
         </ul>
 </nav>
@@ -99,7 +100,7 @@
     <div class="col-sm-1">
 
     </div>
-    <div class="col-sm-8 text-left">
+    <div class="col-sm-9 text-left">
 
         <table class="table">
 

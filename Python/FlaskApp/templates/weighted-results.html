@@ -72,10 +72,10 @@
                   <div class="form-group">
                       <input type="text" name="inputQuery" id="inputQuery" class="form-control form-control-lg" style="margin-top: 50px;" placeholder="Enter query">
                       <ul class="nav nav-pills">
-                            <li>
+                            <li class="active">
                                 <a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Just URLs</a>
                             </li>
-                            <li class="active"><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
+                            <li><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
 
                       </ul>
                   </div>
@@ -87,8 +87,8 @@
 		</form>
         <hr>
         <ul class="nav nav-pills">
-            <li class="active"><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}">Basic td-idf</a></li>
-            <li><a href="{{ url_for('showWeightedInformativeResults', inputQuery = inputQuery) }}">Weighted tf-idf</a></li>
+            <li ><a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Basic td-idf</a></li>
+            <li class="active"><a href="{{ url_for('showWeightedResults', inputQuery = inputQuery) }}">Weighted tf-idf</a></li>
             <li><a href="#">Positioning</a></li>
         </ul>
 </nav>
@@ -100,15 +100,14 @@
 
     </div>
     <div class="col-sm-9 text-left">
+
         <table class="table">
 
               {% for table in tables %}
                 {{ table|safe }}
                 {% endfor %}
 
-        </table>
-
-
+          </table>
     </div>
     <div class="col-sm-2 ">
 
