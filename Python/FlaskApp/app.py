@@ -38,6 +38,7 @@ def populatedReultsHTML(results, query):
         query = query[ :limitIndex - 1]
 
     reTerms = ""
+    query = query.lower()
 
     for terms in query:
         reTerms += terms + ".*"

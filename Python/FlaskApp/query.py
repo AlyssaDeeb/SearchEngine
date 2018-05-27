@@ -209,7 +209,7 @@ def weighted_tf_idf_Results(searchInput):
     if "k=" in searchInput:
         limitIndex = searchInput.index("k=")
         print limitIndex
-        limit = searchInput[limitIndex + 2:]
+        limit = int(searchInput[limitIndex + 2:])
         searchInput = searchInput[:limitIndex]
 
     query_terms = clean_input_NoPrompt(searchInput)
@@ -247,7 +247,7 @@ def tf_idf_Results(searchInput):
 
     if "k=" in searchInput:
         limitIndex = searchInput.index("k=")
-        limit = searchInput[limitIndex + 2:]
+        limit = int(searchInput[limitIndex + 2:])
         searchInput = searchInput[ :limitIndex]
 
 
@@ -286,7 +286,7 @@ def position_Results(searchInput):
     if "k=" in searchInput:
         limitIndex = searchInput.index("k=")
         print limitIndex
-        limit = searchInput[limitIndex + 2:]
+        limit = int(searchInput[limitIndex + 2:])
         searchInput = searchInput[:limitIndex]
 
     query_terms = clean_input_NoPrompt(searchInput)
@@ -413,7 +413,7 @@ def driver():
 
         results = andQuery(cursor, query_terms)
 
-        if len(results > 20):
+        if len(results) < 20:
             results += orQuery(cursor, query_terms)
 
         for name, url in results:
