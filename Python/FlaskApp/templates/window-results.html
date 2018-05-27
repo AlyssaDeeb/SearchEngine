@@ -65,21 +65,20 @@
   <form  role="search" method = "POST" >
           <div class="row">
           	<div class="col-lg-3">
-                <a href="/">
-                <img width = 300  class="center-block" src="https://lh3.googleusercontent.com/ejorZTlVd6_HO37DzSvyIqFvsMgxaz6rcZCW6Y7amsnC1DaCExuiGVyzBiDR1N4xxEKKlDdnvjFADFgNP8Wdi6Ip7KatnhOBhhf7paAirZYcX3EDaYKjkm8nMqyZE9zgI_5zgs7K0k1o3mLiSN5bTJXtnLCNkASL-mRM6reTwtb_QGF2i2bg6U4AVuIGaRu6h3RzkVL8RZqxANnW7wraPFiN1rClXs_WnY3dDzPyH4OBsikZ8I6X7XchxjS1gLMx3FtawWtsIKpw_Xl4X1aaefS4UIhp1uPztUAjkgxHr1rlrAqziQnzXd7KP1xk8krfUlS5tWQTBGYeTVPTO8r1j-Qs0brCdRuIz76W17aw6yN929vVZKXcwF4i8JG7A5krDlgh1O_tBEcBsQdK-PaVJIe30WbGfMR9-0-tCoG8Gg_QX5u6OuKYB2GrnUP5HEOdpM6QO9uXkKSn023mJek-eyfrJs9UJ-26vysdCniqETqDF7Oauz3GyffkF6k-0-F-stYT2fdeZIKSMBINVxdwnKcurK-yGa--ofZiuaIsiC4QyKG7ZnRue4d6atINB2vXJ1ivVNJzQ16J70fmok08z9PUO845fE4RN1CJdQLlttmu8S47d0UwGkE7BKPA2xVBHo7xY3651Gj6agOVwAGNVQyX8fs9sAkA=w1000-h432-no" ></a>
-            </div>
+            <a href="/">
+  <img width = 300  class="center-block" src="https://lh3.googleusercontent.com/ejorZTlVd6_HO37DzSvyIqFvsMgxaz6rcZCW6Y7amsnC1DaCExuiGVyzBiDR1N4xxEKKlDdnvjFADFgNP8Wdi6Ip7KatnhOBhhf7paAirZYcX3EDaYKjkm8nMqyZE9zgI_5zgs7K0k1o3mLiSN5bTJXtnLCNkASL-mRM6reTwtb_QGF2i2bg6U4AVuIGaRu6h3RzkVL8RZqxANnW7wraPFiN1rClXs_WnY3dDzPyH4OBsikZ8I6X7XchxjS1gLMx3FtawWtsIKpw_Xl4X1aaefS4UIhp1uPztUAjkgxHr1rlrAqziQnzXd7KP1xk8krfUlS5tWQTBGYeTVPTO8r1j-Qs0brCdRuIz76W17aw6yN929vVZKXcwF4i8JG7A5krDlgh1O_tBEcBsQdK-PaVJIe30WbGfMR9-0-tCoG8Gg_QX5u6OuKYB2GrnUP5HEOdpM6QO9uXkKSn023mJek-eyfrJs9UJ-26vysdCniqETqDF7Oauz3GyffkF6k-0-F-stYT2fdeZIKSMBINVxdwnKcurK-yGa--ofZiuaIsiC4QyKG7ZnRue4d6atINB2vXJ1ivVNJzQ16J70fmok08z9PUO845fE4RN1CJdQLlttmu8S47d0UwGkE7BKPA2xVBHo7xY3651Gj6agOVwAGNVQyX8fs9sAkA=w1000-h432-no" ></a>
+                          </div>
               <div class="col-sm-4 ">
                   <div class="form-group">
                       <input type="text" name="searchQuery" id="searchQuery" class="form-control form-control-lg" style="margin-top: 50px;" placeholder="Enter query">
                       <ul class="nav nav-pills">
                             <li class="active">
-                                <a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Just URLs</a>
+                                <a href="{{ url_for('showWindowResults', inputQuery = inputQuery) }}">Just URLs</a>
                             </li>
-                            <li><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
+                            <li><a href="{{ url_for('showWindowInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
 
                       </ul>
                   </div>
-
               </div>
               <div class="col-sm-1">
                   <button type="submit" style="margin-top: 50px;" class="btn btn-primary">Search</button>
@@ -88,9 +87,9 @@
 		</form>
         <hr>
         <ul class="nav nav-pills">
-            <li class="active"><a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Basic td-idf</a></li>
+            <li ><a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Basic td-idf</a></li>
             <li><a href="{{ url_for('showWeightedResults', inputQuery = inputQuery) }}">Weighted tf-idf</a></li>
-            <li><a href="{{ url_for('showWindowResults', inputQuery = inputQuery) }}">Window Size</a></li>
+            <li class="active"><a href="{{ url_for('showWindowResults', inputQuery = inputQuery) }}">Window Size</a></li>
         </ul>
 </nav>
 

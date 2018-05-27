@@ -70,12 +70,12 @@
             </div>
               <div class="col-sm-4 ">
                   <div class="form-group">
-                      <input type="text" name="inputQuery" id="inputQuery" class="form-control form-control-lg" style="margin-top: 50px;" placeholder="Enter query">
+                      <input type="text" name="searchQuery" id="searchQuery" class="form-control form-control-lg" style="margin-top: 50px;" placeholder="Enter query">
                       <ul class="nav nav-pills">
                             <li>
-                                <a href="{{ url_for('showResults', inputQuery = inputQuery) }}">Just URLs</a>
+                                <a href="{{ url_for('showWeightedResults', inputQuery = inputQuery) }}">Just URLs</a>
                             </li>
-                            <li class="active"><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
+                            <li class="active"><a href="{{ url_for('showWeightedInformativeResults', inputQuery = inputQuery) }}"> Informative</a></li>
 
                       </ul>
                   </div>
@@ -89,7 +89,7 @@
         <ul class="nav nav-pills">
             <li ><a href="{{ url_for('showInformativeResults', inputQuery = inputQuery) }}">Basic td-idf</a></li>
             <li class="active"><a href="{{ url_for('showWeightedInformativeResults', inputQuery = inputQuery) }}">Weighted tf-idf</a></li>
-            <li><a href="#">Positioning</a></li>
+            <li><a href="{{ url_for('showWindowInformativeResults', inputQuery = inputQuery) }}">Window Size</a></li>
         </ul>
 </nav>
 

@@ -9,10 +9,17 @@ app = Flask(__name__)
 Populate URL table
 """
 def simpleReultsHTML(results, query):
+    if "k=" in query:
+        limitIndex = query.index("k=")
+        limit = query[limitIndex + 2:]
+        query = query[ :limitIndex - 1]
+
     html = "<h2>Showing Results for: \'" + query + "\'</h2><h3>" + str(len(results)) +" Results Found...</h3>"
     html += "<thead><tr><th>File</th><th>URL</th></tr></thead><tbody>"
+
     for name, url in results:
-        html += "<tr ><td>"+ name +"</td><td style=\"word-wrap: break-word;min-width: 200px;max-width: 200px;\"><a><href = " + url + "/> " + url + "</a></td></tr>"
+        url = "http://" + url if not url.startswith("http") else url
+        html += "<tr><td>"+ name +"</td><td style=\"word-wrap: break-word;min-width: 200px;max-width: 200px;\"><a href = " + url + "/> " + url + "</a></td></tr>"
 
     html += "</tbody>"
     return html
@@ -20,10 +27,15 @@ def simpleReultsHTML(results, query):
 
 
 """
-Populate Title table
+Populate Title table with url and substring from website text containing search results
 """
 def populatedReultsHTML(results, query):
     base_dir = 'C:\\Users\\alyss\\Desktop\\cs121\\WEBPAGES\\WEBPAGES_RAW\\'
+
+    if "k=" in query:
+        limitIndex = query.index("k=")
+        limit = query[limitIndex + 2:]
+        query = query[ :limitIndex - 1]
 
     reTerms = ""
 
@@ -46,6 +58,9 @@ def populatedReultsHTML(results, query):
                 else:
                     currentTitletitle = url
 
+                for script in soup(["script", "style"]):   #removes javascript and style from html parser
+                    script.extract()
+
                 wholeText = soup.text
 
                 index = soup.text.lower().find(query)
@@ -57,7 +72,8 @@ def populatedReultsHTML(results, query):
 
             except Exception:
                 print "UNKNOWN: Error processing file:" + base_dir + name
-        htmlTable += "<tr ><td style=\"word-wrap: break-word;min-width: 200px;max-width: 200px;\"><b>"+ currentTitle +"</b><br/><a><href = " + url + "/> " + url + "<br/></a>"
+        url = "http://" + url if not url.startswith("http") else url
+        htmlTable += "<tr ><td style=\"word-wrap: break-word;min-width: 200px;max-width: 200px;\"><b>"+ currentTitle +"</b><br/><a href = " + url + "/>" + url + "<br/></a>"
         htmlTable += "<br/>" + wholeText + "...</td></tr>"
 
     htmlTable += "</tbody>"
@@ -87,6 +103,12 @@ Basic Results
 @app.route('/results', methods=['GET','POST'])
 def showResults():
     if request.method == 'POST':
+        if (request.form['searchQuery']):
+            lastQuery = request.form['searchQuery']
+            results = query.tf_idf_Results(lastQuery)
+
+            return render_template('results.html', tables=[simpleReultsHTML(results, lastQuery)], inputQuery=lastQuery)
+
         if (request.args.get('inputQuery')):
             lastQuery = request.args.get('inputQuery')
             results = query.tf_idf_Results(lastQuery)
@@ -109,6 +131,12 @@ Basic Informative Results
 def showInformativeResults():
 
     if request.method == 'POST':
+        if (request.form['searchQuery']):
+            lastQuery = request.form['searchQuery']
+            results = query.tf_idf_Results(lastQuery)
+
+            return render_template('informativeResults.html', tables = [populatedReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+
         if (request.args.get('inputQuery')):
             lastQuery = request.args.get('inputQuery')
             results = query.tf_idf_Results(lastQuery)
@@ -131,6 +159,12 @@ Weighted Results
 @app.route('/weightedResults', methods=['GET','POST'])
 def showWeightedResults():
     if request.method == 'POST':
+        if (request.form['searchQuery']):
+            lastQuery = request.form['searchQuery']
+            results = query.tf_idf_Results(lastQuery)
+
+            return render_template('weighted-results.html', tables = [simpleReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+
         if (request.args.get('inputQuery')):
             lastQuery = request.args.get('inputQuery')
             results = query.tf_idf_Results(lastQuery)
@@ -153,6 +187,12 @@ Weighted Informative Results
 def showWeightedInformativeResults():
 
     if request.method == 'POST':
+        if (request.form['searchQuery']):
+            lastQuery = request.form['searchQuery']
+            results = query.weighted_tf_idf_Results(lastQuery)
+
+            return render_template('weighted-informativeResults.html', tables = [populatedReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+
         if (request.args.get('inputQuery')):
             lastQuery = request.args.get('inputQuery')
             results = query.weighted_tf_idf_Results(lastQuery)
@@ -170,6 +210,62 @@ def showWeightedInformativeResults():
 
 
 """
+Window Results
+"""
+@app.route('/windowResults', methods=['GET','POST'])
+def showWindowResults():
+    if request.method == 'POST':
+        if (request.form['searchQuery']):
+            lastQuery = request.form['searchQuery']
+            results = query.position_Results(lastQuery)
+
+            return render_template('window-results.html', tables = [simpleReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+
+        if (request.args.get('inputQuery')):
+            lastQuery = request.args.get('inputQuery')
+            results = query.position_Results(lastQuery)
+
+            return render_template('window-results.html', tables = [simpleReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+
+    else:
+        if (request.args.get('inputQuery')):
+            lastQuery = request.args.get('inputQuery')
+            results = query.position_Results(lastQuery)
+
+            return render_template('window-results.html', tables = [simpleReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+        return render_template('window-results.html')
+
+
+"""
+Window Informative Results
+"""
+@app.route('/windowInformative', methods=['GET','POST'])
+def showWindowInformativeResults():
+
+    if request.method == 'POST':
+        if (request.form['searchQuery']):
+            lastQuery = request.form['searchQuery']
+            results = query.position_Results(lastQuery)
+
+            return render_template('window-informativeResults.html', tables = [populatedReultsHTML(results, lastQuery)], inputQuery=lastQuery)
+
+        if (request.args.get('inputQuery')):
+            lastQuery = request.args.get('inputQuery')
+            results = query.position_Results(lastQuery)
+
+            return render_template('window-informativeResults.html', tables = [populatedReultsHTML(results, lastQuery)], inputQuery = lastQuery)
+
+    else:
+        if(request.args.get('inputQuery')):
+            lastQuery = request.args.get('inputQuery')
+            results = query.position_Results(lastQuery)
+
+            return render_template('window-informativeResults.html', tables=[populatedReultsHTML(results, lastQuery)], inputQuery=lastQuery)
+
+    return render_template('window-informativeResults.html')
+
+
+"""
 Main
 """
 if __name__ == "__main__":
@@ -177,5 +273,8 @@ if __name__ == "__main__":
 
 
 """
-Souces: https://code.tutsplus.com/tutorials/creating-a-web-app-from-scratch-using-python-flask-and-mysql--cms-22972
+Souces: 
+    https://code.tutsplus.com/tutorials/creating-a-web-app-from-scratch-using-python-flask-and-mysql--cms-22972
+    https://www.crummy.com/software/BeautifulSoup/bs4/doc/
+    https://stackoverflow.com/questions/22799990/beatifulsoup4-get-text-still-has-javascript
 """
